@@ -5,6 +5,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.agents import create_tool_calling_agent, AgentExecutor
+from tools import search_tool, wikipedia_tool
 
 # Load environment variables from .env file
 load_dotenv()
@@ -36,18 +37,22 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 ).partial(format_instructions=parser.get_format_instructions())
 
+tools = [search_tool, wikipedia_tool]
 agent = create_tool_calling_agent(
     llm = llm,
     prompt = prompt,
-    tools = []
+    tools = tools
 )
 
-agent_executor = AgentExecutor(agent=agent, tools=[], verbose=True)
-raw_response =  agent_executor.invoke({"query": "What is the capital of France?"})
-print(raw_response)  # Print the raw response
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+query = input("Enter your query: ")
+raw_response = agent_executor.invoke({"query": query})
 
 try:
-    structured_response = parser.parse(raw_response.get("output")[0]["text"])
+    # Change this line to directly access the 'output' string
+    structured_response = parser.parse(raw_response["output"])
+    print(structured_response)
 except Exception as e:
-    print("Error parsing response", e, "Raw Response - ", raw_response)
+    print("Error parsing response", e)
+    print("Raw Response Structure:", raw_response)
 
